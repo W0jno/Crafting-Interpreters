@@ -6,7 +6,7 @@ import (
 )
 
 func main() {
-	bool hadError = false
+	hadError := false
 	if len(os.Args ) > 2{
 		fmt.Println("Usage: Lox [script]")
 		os.Exit(64)
@@ -38,10 +38,10 @@ func runPrompt(){
 }
 
 func run(source string){
-	scanner := Scanner(source)
+	scanner := ast.Scanner(source)
 	tokens := scanner.scanTokens()
 
-	for _, token : range tokens {
+	for _, token := range tokens {
 		fmt.Println(token)
 	}
 }
