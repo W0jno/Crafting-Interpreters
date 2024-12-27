@@ -79,6 +79,8 @@ func (s *Scanner) Scan() []Token {
 		return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z')
 	}
 
+	
+
 	number := func(){
 		for isDigit(peek()){
 			advance()
@@ -160,13 +162,21 @@ func (s *Scanner) Scan() []Token {
 				for peek() != '\n' && !isAtEnd() {
 					advance()
 				}
+			} else if(match('*')){
+				for peek() != '*' && peekNext() != '/' && !isAtEnd() {
+					if peek() == '\n' {
+						line++
+					}
+					advance()
+				}
+				
 			} else {
 				addToken(Slash)
 			}
 		case ' ':
 		case '\r':
 		case '\t':
-			break
+			// Ignore whitespace.
 		case '\n':
 			line++
 		case '"':
@@ -188,17 +198,19 @@ func (s *Scanner) Scan() []Token {
 			if(isDigit(c)){
 				number()
 			} else if(isLetter(c)){
+				start = current - 1
+
 				for isLetter(peek()) || isDigit(peek()) {
 						advance()
 					}
-
-					if t, ok := keywords[string(runes[start:current])]; ok {
-						tokens = append(tokens, Token{t, string(runes[start:current]), "", line})
-					} else {
-						tokens = append(tokens, Token{Identifier, string(runes[start:current]), "", line})
-					}
+				text := string(runes[start:current])
+				if t, ok := keywords[string(runes[start:current])]; ok {
+					tokens = append(tokens, Token{t, text, "", line})
+				} else {
+					tokens = append(tokens, Token{Identifier, text, "", line})
+				}
 			} else {
-				return fmt.Errorf("unknown character '%v' at line %d", string(runes), line)
+				fmt.Printf("unknown character '%v' at line %d\n", string(runes), line)
 			}
 
 		}
@@ -213,6 +225,6 @@ func (s *Scanner) Scan() []Token {
 	}
 
 
-	tokens = append(tokens, Token{Eof, "", "", line}) // Eof - End of File
+	//tokens = append(tokens, Token{Eof, "", "", line}) // Eof - End of File
 	return tokens
 }

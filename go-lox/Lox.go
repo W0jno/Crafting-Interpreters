@@ -7,6 +7,7 @@ import (
 	"github.com/w0jno/Crafting-Interpreters/go-lox/ast/ast"
 )
 
+// ADD SUPPORT TO MULTIPLE LINES COMMENTS
 func main() {
 	
 	if len(os.Args ) > 2{
@@ -47,8 +48,6 @@ func run(source string){
 		fmt.Println(token)
 	}
 }
-
-
 
 func report(line int, where string, message string) {
 	fmt.Printf("[line %d] Error %s: %s\n", line, where, message)
