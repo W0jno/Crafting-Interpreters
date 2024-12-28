@@ -2,76 +2,71 @@ package main
 
 import (
 	"fmt"
-	"go/format"
 	"os"
-	"path/filepath"
 	"strings"
 )
 
-func main () {
- if len(os.Args ) != 2{
-	fmt.Println("Usage: generate_ast <output directory>")
-	os.Exit(1)
- }
- 	outputDir, err := filepath.Abs(os.Args[1])
- 	if err != nil {
-		panic(err)
-	}
-	defineAst(outputDir, "Expr", []string{
-		"Binary   : Expr left, Token operator, Expr right",
-    	"Grouping : Expr expression",
-    	"Literal  : Object value",
-    	"Unary    : Token operator, Expr right",
-	})
-
-	
+func main() {
+    if len(os.Args) != 2 {
+        fmt.Println("Usage: generate_ast <output directory>")
+        os.Exit(64)
+    }
+    outputDir := os.Args[1]
+    defineAst(outputDir, "Expr", []string{
+        "Binary   : Expr left, Token operator, Expr right",
+        "Grouping : Expr expression",
+        "Literal  : Object value",
+        "Unary    : Token operator, Expr right",
+    })
 }
 
-func defineAst(output string, base string, types []string){
-	path := output + "/" + base + ".go"
+func defineAst(outputDir, base string, types []string) {
+    path := fmt.Sprintf("%s/%s.go", outputDir, strings.ToLower(base))
+    var src string
 
-	var src string
+    src += fmt.Sprintln("package ast")
+    src += fmt.Sprintln("")
+    src += defineVisitor(base, types)
 
-	src += fmt.Sprintln("")
-	src += fmt.Sprintln("package lox")
-	src += fmt.Sprintln("")
+    for _, t := range types {
+        className := strings.TrimRight(strings.Split(t, ":")[0], " ")
+        fields := strings.TrimRight(strings.Split(t, ":")[1], " ")
+        src += defineType(base, className, fields)
+    }
 
-	for _, t := range types {
-		className := strings.TrimRight(strings.Split(t, ":")[0], "\t")
-		fields := strings.TrimRight(strings.Split(t, ":")[1], " ")
-		src += defineType(base, className, fields)
-
-	}
-	if err := saveFile(path, src); err != nil {
-		panic(err)
-	}
+    if err := saveFile(path, src); err != nil {
+        panic(err)
+    }
 }
 
-func defineType(base, className, fields string) string{
-	var src string
+func defineVisitor(base string, types []string) string {
+    var src string
+    src += fmt.Sprintf("type %sVisitor interface {\n", base)
+    for _, t := range types {
+        typeName := strings.TrimRight(strings.Split(t, ":")[0], " ")
+        src += fmt.Sprintf("    Visit%s%s(%s *%s) interface{}\n", typeName, base, strings.ToLower(base), typeName)
+    }
+    src += "}\n"
+    return src
+}
 
-	src += fmt.Sprintln("")
-	src += fmt.Sprintf("type %s struct {\n", className)
-	src += fmt.Sprintln("")
-
-	flds := strings.Split(fields, ", ")
-
-	for _, f := range flds {
-		src += fmt.Sprintln(f)
-	}
-	src += fmt.Sprintln("}")
-	return src
+func defineType(base, className, fieldList string) string {
+    var src string
+    src += fmt.Sprintf("type %s struct {\n", className)
+    fields := strings.Split(fieldList, ", ")
+    for _, field := range fields {
+        fieldParts := strings.Split(field, " ")
+        fieldName := fieldParts[1]
+        fieldType := fieldParts[0]
+        src += fmt.Sprintf("    %s %s\n", fieldName, fieldType)
+    }
+    src += "}\n"
+    src += fmt.Sprintf("func (e *%s) Accept(visitor %sVisitor) interface{} {\n", className, base)
+    src += fmt.Sprintf("    return visitor.Visit%s%s(e)\n", className, base)
+    src += "}\n"
+    return src
 }
 
 func saveFile(path, src string) error {
-	buf, err := format.Source([]byte(src))
-	if err != nil {
-		return err
-	}
-
-	os.WriteFile(path, buf, 0644)
-	return nil
+    return os.WriteFile(path, []byte(src), 0644)
 }
-
-
-
